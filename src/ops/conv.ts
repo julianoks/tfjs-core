@@ -359,6 +359,74 @@ export class ConvOps {
     return ENV.engine.runKernel(
         backend => backend.conv2dDerFilter(x4D, dy4D, convInfo), {x4D, dy4D});
   }
+  /**
+   * Computes an N-D convolution over the input x.
+   *
+   * @param x The input tensor, of rank 2, 3, or 4.
+   *   Batch of one is assumed if the rank of `x` 
+   *   is one less than the rank of `filter`.
+   * @param filter The filter, of rank 3 or 4.
+   * @param The strides of a convolution, 
+   *   either an integer or a sequence of (filter.rank - 2) integers.
+   * @param pad The type of padding algorithm.
+   *    - `same` and stride 1: output will be of same size as input,
+   *       regardless of filter size.
+   *    - `valid`: output will be smaller than input if filter size is not 
+   *       a `1` or a sequence of `1`s.
+   *   - For more info, see this guide:
+   *     [https://www.tensorflow.org/api_guides/python/nn#Convolution](
+   *          https://www.tensorflow.org/api_guides/python/nn#Convolution)
+   * @param dataFormat If (filter.rank - 2) is 1, defaults to 'NWC'.
+   *     If (filter.rank - 2) is 2, defaults to 'NHWC'.
+   * @param dilation The dilation rates in which we sample input values in
+   *     atrous convolution, either an integer or 
+   *     a sequence of (filter.rank - 2) integers.
+   *     If it is not `1` or a sequence of `1`s, 
+   *     then all values of `stride` must be `1`.
+   * @param dimRoundingMode The rounding mode used when computing output
+   *     dimensions if pad is a number. If none is provided, it will not round
+   *     and error if the output is of fractional size.
+   */
+  @doc({heading: 'Operations', subheading: 'Convolution'})
+  @operation
+  static convolution<T extends Tensor2D|Tensor3D|Tensor4D>(
+    x: T, filter: T,
+    strides: number[]|number,
+    pad: 'same'|'valid'|number = 'same',
+    dataFormat: 'NWC'|'NCW'|'NHWC'|'NCHW',
+    dilation: number[]|number = 1,
+    dimRoundingMode: 'floor'|'round'|'ceil'): T {
+    util.assertArgumentsAreTensors({x, filter}, 'conv2d');
+    util.assert(
+      filter.rank === 3 || filter.rank === 4,
+      `Error in convolution: filter must be of rank 3 or 4, ` +
+      `but got ${filter.rank}`);
+    util.assert(
+       x.rank === filter.rank|| x.rank === (filter.rank - 1),
+      `Error in convolution: x ${x} must be of the same rank, ` +
+        `or one less than the rank of filter ${filter}.`);
+    const nDims = filter.rank - 2;
+    let out;
+    if(nDims === 1){
+      out = ConvOps.conv1d(x as Tensor2D|Tensor3D,
+        filter as Tensor3D,
+        strides as number,
+        pad,
+        (dataFormat || 'NWC') as 'NWC'|'NCW',
+        dilation as number,
+        dimRoundingMode);
+    }
+    if(nDims === 2){
+      out = ConvOps.conv2d(x as Tensor3D|Tensor4D,
+        filter as Tensor4D,
+        strides as [number, number]|number,
+        pad,
+        (dataFormat || 'NHWC') as 'NHWC'|'NCHW',
+        dilation as [number, number]|number,
+        dimRoundingMode);
+    }
+    return out as T;
+  }
 
   /**
    * Computes the transposed 2D convolution of an image, also known as a

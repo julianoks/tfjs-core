@@ -53,6 +53,7 @@ export const concat4d = ConcatOps.concat4d;
 
 export const conv1d = ConvOps.conv1d;
 export const conv2d = ConvOps.conv2d;
+export const convolution = ConvOps.convolution;
 export const conv2dTranspose = ConvOps.conv2dTranspose;
 export const depthwiseConv2d = ConvOps.depthwiseConv2d;
 export const separableConv2d = ConvOps.separableConv2d;
